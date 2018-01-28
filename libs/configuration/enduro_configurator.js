@@ -9,10 +9,29 @@ const Promise = require('bluebird')
 const extend = require('extend')
 const path = require('path')
 const fs = Promise.promisifyAll(require('fs-extra'))
+const AWS = require('aws-sdk')
 
 // * enduro dependencies
 const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
 const default_configuration = require(enduro.enduro_path + '/libs/configuration/enduro_default_configuration.js')
+
+function getConfigS3Credentials (secret) {
+	if (!secret || !secret.s3) return
+
+	if (secret.s3.S3_KEY && secret.s3.S3_SECRET) {
+		return new AWS.Credentials({
+			accessKeyId: secret.s3.S3_KEY,
+			secretAccessKey: secret.s3.S3_SECRET
+		})
+	}
+
+	if (process.env.S3_KEY && process.env.S3_SECRET) {
+		return new AWS.Credentials({
+			accessKeyId: process.env.S3_KEY,
+			secretAccessKey: process.env.S3_SECRET
+		})
+	}
+}
 
 // * ———————————————————————————————————————————————————————— * //
 // * 	read configurtion file
@@ -33,11 +52,24 @@ enduro_configurator.prototype.read_config = function () {
 			// abstract/edit the just read configuration
 
 			enduro.config.variables = {}
-			enduro.config.variables.has_s3_setup = enduro.config.secret && enduro.config.secret.s3
-			enduro.config.variables.S3_KEY = (enduro.config.variables.has_s3_setup && enduro.config.secret.s3.S3_KEY) || process.env.S3_KEY
-			enduro.config.variables.S3_SECRET = (enduro.config.variables.has_s3_setup && enduro.config.secret.s3.S3_SECRET) || process.env.S3_SECRET
 
-			enduro.config.variables.s3_enabled = (enduro.config.project_name && enduro.config.variables.S3_KEY && enduro.config.variables.S3_SECRET)
+			let awsCreds = getConfigS3Credentials(enduro.config.secret)
+			if (awsCreds) {
+				AWS.config.credentials = awsCreds
+
+				// enduro.config.variables.has_s3_setup = true
+				// enduro.config.variables.S3_KEY = awsCreds.accessKeyId
+				// enduro.config.variables.S3_SECRET = awsCreds.secretAccessKey
+				if (enduro.config.project_name) {
+					enduro.config.variables.s3_enabled = true
+				}
+			} else if (enduro.config.s3_enabled && AWS.config.credentials) {
+				enduro.config.variables.s3_enabled = true
+			}
+
+			if (enduro.config.variables.s3_enabled) {
+				AWS.config.region = enduro.config.s3.region || 'us-west-1'
+			}
 
 			// disable juicebox if there is nojuice flag
 			if (enduro.flags.nojuice) {
