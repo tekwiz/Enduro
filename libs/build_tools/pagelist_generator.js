@@ -19,6 +19,8 @@ const path = require('path')
 // * enduro dependencies
 const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
 const format_service = require(enduro.enduro_path + '/libs/services/format_service')
+const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
+const rerouting = require(enduro.enduro_path + '/libs/page_rendering/rerouting')
 
 // * ———————————————————————————————————————————————————————— * //
 // * 	init
@@ -62,78 +64,117 @@ pagelist_generator.prototype.init = function (gulp) {
 // * ———————————————————————————————————————————————————————— * //
 pagelist_generator.prototype.generate_cms_list = function () {
 	return new Promise(function (resolve, reject) {
-		glob(enduro.project_path + '/cms/**/*.js', function (err, files) {
-			if (err) { console.log('failed to generate cms list', err) }
+		rerouting.get_rerouter().then((rerouter) => {
+			glob(enduro.project_path + '/cms/**/*.js', function (err, files) {
+				if (err) { console.log('failed to generate cms list', err) }
 
-			let pagelist = {}
-			let flat_pagelist = []
+				let pagelist = {}
+				let flat_pagelist = []
+				let tree_pagelist = { $children: {} }
+				let add_to_tree_promises = []
 
-			// helper function to build the pagelist
-			function build (pagepath, partial_pages, fullpath) {
+				function promise_add_to_tree (item) {
+					var parent = tree_pagelist
+					var destination_path = flat.filepath_from_filename(item.fullpath.replace(/^\//, ''))
 
-				// decides if pagepath is folder or file
-				if (pagepath.length == 1) {
+					item = Object.assign({}, item)
 
-					let page = {}
-					page.page = true
-					page.fullpath = '/' + fullpath.join('/')
-					page.name = format_service.prettify_string(pagepath[0])
-					page.page_slug = pagepath[0].toString()
+					add_to_tree_promises.push(
+						rerouter(destination_path).then((_destination_path) => {
+							if (_destination_path) {
+								destination_path = _destination_path
+							}
 
+							let path_parts = destination_path.split('/')
 
-					// mark generator template as hidden
-					if (fullpath[0] == 'generators' && fullpath.length >= 2 && fullpath[fullpath.length - 2] == fullpath[fullpath.length - 1]) {
-						page.hidden = true
+							if (path_parts[ path_parts.length - 1 ] === 'index') {
+								path_parts.pop()
+							}
+
+							for (let i = 0; i < path_parts.length; i++) {
+								let key = path_parts[i]
+								if (!(key in parent.$children)) {
+									parent.$children[key] = { $children: {} }
+								}
+								parent = parent.$children[key]
+							}
+
+							Object.assign(parent, item, {
+								// destination_path: destination_path,
+								uri: `/${destination_path.replace(/(^|\/)index$/, '')}`
+							})
+						})
+					)
+				}
+
+				// helper function to build the pagelist
+				function build (pagepath, partial_pages, fullpath) {
+					var item = {
+						fullpath: '/' + fullpath.join('/'),
+						name: format_service.prettify_string(pagepath[0]),
+						slug: pagepath[0].toString()
 					}
 
-					partial_pages[pagepath[0]] = page
-					flat_pagelist.push(page)
-				} else {
+					if (pagepath.length == 1) { // pagepath is file
+						item.page_slug = item.slug
 
-					// remove templates from pagelist
-					if (pagepath[0] == 'templates') {
-						return
-					}
-
-					let folder = {}
-					folder.folder = true
-					folder.fullpath = '/' + fullpath.join('/')
-					folder.name = format_service.prettify_string(pagepath[0])
-					folder.folder_slug = pagepath[0].toString()
-
-					if (fullpath[0] == 'generators' && pagepath.length != fullpath.length) {
-						folder.generator = true
-					}
-
-					// global and generators receive special treatment and the subfolders are not created
-					if (folder.name.toLowerCase() == 'global' || folder.name.toLowerCase() == 'generators') {
-						build(pagepath.slice(1), partial_pages, fullpath)
-					} else {
-
-						// adds the folder to the tree if it's not there yet
-						if (!(pagepath[0] in partial_pages)) {
-							partial_pages[pagepath[0]] = folder
+						// mark generator template as hidden
+						if (fullpath[0] == 'generators' && fullpath.length >= 2 && fullpath[fullpath.length - 2] == fullpath[fullpath.length - 1]) {
+							item.hidden = true
+						} else {
+							promise_add_to_tree(item)
 						}
 
-						build(pagepath.slice(1), partial_pages[pagepath[0]], fullpath)
+						item.page = true
+
+						if (partial_pages[item.slug]) { // item is both page and folder
+							Object.assign(item, partial_pages[item.slug])
+						}
+
+						partial_pages[item.slug] = item
+						flat_pagelist.push(item)
+					} else { // else pagepath is folder
+						// remove templates from pagelist
+						if (pagepath[0] == 'templates') return
+
+						item.folder = true
+						item.folder_slug = item.slug
+
+						if (fullpath[0] == 'generators' && pagepath.length != fullpath.length) {
+							item.generator = true
+						}
+
+						// global and generators receive special treatment and the subfolders are not created
+						if (item.name.toLowerCase() == 'global' || item.name.toLowerCase() == 'generators') {
+							return build(pagepath.slice(1), partial_pages, fullpath)
+						}
+
+						if (partial_pages[item.slug]) { // item is both page and folder
+							Object.assign(item, partial_pages[item.slug])
+						}
+
+						partial_pages[item.slug] = item
+						build(pagepath.slice(1), partial_pages[item.slug], fullpath)
+					}
+				}
+
+				// goes throught the glob, crops the filename and builds a pagelist
+				files.map((file) => {
+					return file.match('/cms/(.*).js')[1].split('/')
+				}).forEach((pagepath) => {
+					build(pagepath, pagelist, pagepath)
+				})
+
+				Promise.all(add_to_tree_promises).then(() => {
+					var composed_pagelist = {
+						structured: pagelist,
+						flat: flat_pagelist,
+						tree: tree_pagelist
 					}
 
-				}
-			}
-
-			// goes throught the glob, crops the filename and builds a pagelist
-			files.map((file) => {
-				return file.match('/cms/(.*).js')[1].split('/')
-			}).forEach((pagepath) => {
-				build(pagepath, pagelist, pagepath)
+					resolve(composed_pagelist)
+				})
 			})
-
-			composed_pagelist = {
-				structured: pagelist,
-				flat: flat_pagelist
-			}
-
-			resolve(composed_pagelist)
 		})
 	})
 }
