@@ -2,65 +2,48 @@
 // * 	get cms
 // *
 // * 	admin api endpoint admin_api/get_cms
-// *	@param {string} sid - session id stored in cookie on client
 // *	@param {string} filename - filename of the cms file
 // *	@return {response} - success boolean and requested data file
 // * ———————————————————————————————————————————————————————— * //
-const api_call = function () {}
 
 // * enduro dependencies
 const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
-const admin_sessions = require(enduro.enduro_path + '/libs/admin_utilities/admin_sessions')
 const format_service = require(enduro.enduro_path + '/libs/services/format_service')
 
 // routed call
-api_call.prototype.call = function (req, res, enduro_server) {
-
-	// gets query parameters
-	const sid = req.query.sid
+module.exports = function get_cms (req, res, next) {
 	const filename = req.query.filename
 
 	// checks if all required parameters had been received
-	if (!sid || !filename) {
-		res.send({success: false})
-		return
+	if (!filename) {
+		return res.json({ success: false, message: 'missing filename query parameter' })
 	}
 
-	admin_sessions.get_user_by_session(sid)
-		.then((user) => {
-			return flat.load(filename)
-		}, () => {
-			res.sendStatus(401)
-			throw new Error('abort promise chain')
-		})
-		.then((data) => {
+	flat.load(filename).then((data) => {
+		var page_name = (data.$page_name ? data.$page_name : filename)
 
-			let context = {}
-			context.success = true
-			context.page_name = data.$page_name || filename
-			context.only_page_name = context.page_name.split('/').splice(-1)[0]
+		var only_page_name = page_name.split('/').splice(-1)[0]
 
+		res.json({
+			success: true,
+			page_name: page_name,
+			only_page_name: only_page_name,
+			// name is capitalized and _ are replaced with whitespace
+			pretty_name: format_service.prettify_string(only_page_name),
 			// main data of the content file
-			context.context = data
-
+			context: data,
 			// url where this page is served
-			context.page_link = flat.url_from_filename(context.page_name)
-
+			page_link: flat.url_from_filename(page_name),
 			// associated page means that the page content file is directly linked with an existing url
 			// this is used when deciding whether provide a link from admin to the page that is being edited
-			context.has_page_associated = flat.has_page_associated(context.page_name)
-
-			// name is capitalized and _ are replaced with whitespace
-			context.pretty_name = format_service.prettify_string(context.only_page_name)
-
+			has_page_associated: flat.has_page_associated(page_name),
 			// path to the content file provided in array
-			context.path_list = context.page_name.split('/')
-
+			path_list: page_name.split('/'),
 			// bool saying whether content file can be deleted
-			context.deletable = flat.is_deletable(context.page_name)
-
-			res.send(context)
-		}, () => {})
+			deletable: flat.is_deletable(page_name)
+		})
+	}, (err) => {
+		if (!err) err = new Error('undefined error in rejection')
+		next(err)
+	})
 }
-
-module.exports = new api_call()

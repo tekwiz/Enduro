@@ -4,41 +4,22 @@
 // * 	endpoint: /admin_api/juice_pull
 // *	pulls and re-renders project
 // * ———————————————————————————————————————————————————————— * //
-const api_call = function () {}
 
 // * enduro dependencies
-const admin_sessions = require(enduro.enduro_path + '/libs/admin_utilities/admin_sessions')
 const juicebox = require(enduro.enduro_path + '/libs/juicebox/juicebox')
 
 // routed call
-api_call.prototype.call = function (req, res, enduro_server) {
+module.exports = function juice_pull (req, res, next) {
 
-	const sid = req.query.sid
+	function rejectToError (err) {
+		if (!err) err = new Error('undefined error in rejection')
+		next(err)
+	}
 
-	admin_sessions.get_user_by_session(sid)
-		.then((user) => {
-			return juicebox.pull(false)
-		}, () => {
-			throw new Error()
-		})
-		.then(() => {
-			return enduro.actions.render()
-		}, () => {
-			throw new Error()
-		})
-		.then(() => {
-			return juicebox.diff()
-		}, () => {
-			throw new Error()
-		})
+	juicebox.pull(false)
+		.then(() => enduro.actions.render(), rejectToError)
+		.then(() => juicebox.diff(), rejectToError)
 		.then((diff_result) => {
-			res.send({
-				success: true,
-				diff_result: diff_result
-			})
-		}, () => {
-			res.sendStatus(403)
-		})
+			res.send({ success: true, diff_result: diff_result })
+		}, rejectToError)
 }
-
-module.exports = new api_call()

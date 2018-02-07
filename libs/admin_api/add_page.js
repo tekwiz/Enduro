@@ -4,38 +4,25 @@
 // * 	endpoint: /admin_api/add_page
 // *	adds new generator page
 // * ———————————————————————————————————————————————————————— * //
-const api_call = function () {}
 
 // * enduro dependencies
-const admin_sessions = require(enduro.enduro_path + '/libs/admin_utilities/admin_sessions')
-const page_adding_service = require(enduro.enduro_path + '/libs/admin_utilities/page_adding_service')
-const logger = require(enduro.enduro_path + '/libs/logger')
+const page_adding_service = require('../admin_utilities/page_adding_service')
+const logger = require('../logger')
 
 // routed call
-api_call.prototype.call = function (req, res, enduro_server) {
-
+module.exports = function add_page (req, res) {
 	// stores page name and generator name
 	const new_pagename = req.query.new_pagename
 	const generator = req.query.generator
 
-	logger.timestamp('Trying to create a new page', 'page_manipulation')
+	logger.timestamp(`${req.user.username} is trying to create a new page`, 'page_manipulation')
 
 	// checks if user is logged in
-	admin_sessions.get_user_by_session(req.query.sid)
-		.then((user) => {
-			logger.timestamp(user + 'is trying to create a new page', 'page_manipulation')
-			return page_adding_service.new_generator_page(new_pagename, generator)
-		}, (user) => {
-			logger.timestamp('adding page failed', 'page_manipulation')
-			throw new Error('abort promise chain')
-		})
-		.then((pagelist) => {
-			logger.timestamp('adding page successful', 'page_manipulation')
-			res.send({success: true})
-		}, () => {
-			logger.timestamp('login failed', 'page_manipulation')
-			res.send({success: false, message: 'session not valid'})
-		})
+	page_adding_service.new_generator_page(new_pagename, generator).then((pagelist) => {
+		logger.timestamp('adding page successful', 'page_manipulation')
+		res.json({ success: true })
+	}, (err) => {
+		logger.err('adding page failed', 'page_manipulation', err)
+		res.json({ success: false, message: 'adding page failed' })
+	})
 }
-
-module.exports = new api_call()

@@ -1,10 +1,10 @@
 const test_utilities = function () {}
 
 // * vendor dependencies
-const Promise = require('bluebird')
 const path = require('path')
 const request = require('request-promise')
-const fs = require('fs')
+
+Promise.timeout = require('promise-timeout').timeout
 
 // * enduro dependencies
 const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
@@ -14,11 +14,9 @@ const remote_handler = require(enduro.enduro_path + '/libs/remote_tools/remote_h
 const TEST_FOLDER_PATH = path.join(process.cwd(), 'testfolder')
 
 test_utilities.prototype.before = function (local_enduro, project_name, scaffolding) {
-	const self = this
-
 	scaffolding = scaffolding || 'test'
 
-	return self.delete_testfolder()
+	return Promise.timeout(5000, this.delete_testfolder()
 		.then(() => {
 			return local_enduro.init()
 		})
@@ -34,19 +32,21 @@ test_utilities.prototype.before = function (local_enduro, project_name, scaffold
 			enduro.project_path = path.join(enduro.project_path, project_name)
 			return local_enduro.init({ project_path: enduro.project_path })
 		})
+	)
 }
 
 test_utilities.prototype.after = function () {
-	const self = this
-
-	// this will delete testfolder and set the path back to project's root for the other tests
-	return Promise.race([
-			self.delete_testfolder()
-				.then(() => {
-					enduro.project_path = process.cwd()
-				}),
-			new Promise.delay(1500)
-		])
+	// const self = this
+	//
+	// // this will delete testfolder and set the path back to project's root for the other tests
+	// return Promise.race([
+	// 		self.delete_testfolder()
+	// 			.then(() => {
+	// 				enduro.project_path = process.cwd()
+	// 			}),
+	// 		new Promise.delay(1500)
+	// 	])
+	return Promise.timeout(this.delete_testfolder, 1500)
 }
 
 test_utilities.prototype.request_file = function (url) {

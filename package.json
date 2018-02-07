@@ -32,6 +32,7 @@
     "babel-core": "^6.26.0",
     "base64id": "^1.0.0",
     "bluebird": "^3.5.1",
+    "body-parser": "1.18.2",
     "browser-sync": "^2.23.3",
     "chalk": "^2.3.0",
     "connect-multiparty": "^2.1.0",
@@ -97,7 +98,8 @@
     "eslint": "^4.14.0",
     "istanbul": "^0.4.2",
     "mocha": "^4.1.0",
-    "mocha-lcov-reporter": "^1.2.0"
+    "mocha-lcov-reporter": "^1.2.0",
+    "promise-timeout": "github:maxmedia/promise-timeout#v1.1.1.mxm"
   },
   "directories": {},
   "dist": {

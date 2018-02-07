@@ -10,10 +10,8 @@ const enduro_server = function () {}
 
 // * vendor dependencies
 const express = require('express')
-const app = express()
 const session = require('express-session')
 const cors = require('cors')
-const multiparty_middleware = require('connect-multiparty')()
 const cookieParser = require('cookie-parser')
 
 // * enduro dependencies
@@ -24,13 +22,17 @@ const logger = require(enduro.enduro_path + '/libs/logger')
 const ab_tester = require(enduro.enduro_path + '/libs/ab_testing/ab_tester')
 const brick_handler = require(enduro.enduro_path + '/libs/bricks/brick_handler')
 
+var app = express()
+
 // initialization of the sessions
 app.set('trust proxy', 1)
 app.use(session({
 	secret: 'keyboard cat',
 	resave: false,
 	saveUninitialized: true,
-	cookie: {},
+	cookie: {
+		maxAge: 30 * 60 * 1000 // 30 minutes
+	},
 }))
 
 app.use(cookieParser())
@@ -77,6 +79,16 @@ enduro_server.prototype.run = function (server_setup) {
 		// forward the app and server to running enduro application
 		website_app.forward(app, enduro.server)
 
+		app.use('/admin/logout', (req, res) => {
+			req.session.destroy((err) => {
+				if (err) {
+					console.error(err.stack ? err.stack : `Error message: ${err}`)
+					return res.status(500).send('An error occurred')
+				}
+				return res.redirect('/admin')
+			})
+		})
+
 		// serve static files from /_generated folder
 		app.use('/admin', express.static(enduro.config.admin_folder))
 		app.use('/assets', express.static(enduro.project_path + '/' + enduro.config.build_folder + '/assets'))
@@ -101,9 +113,7 @@ enduro_server.prototype.run = function (server_setup) {
 		brick_handler.serve_brick_static_assets(app, express)
 
 		// handle for all admin api calls
-		app.all('/admin_api/*', multiparty_middleware, function (req, res) {
-			admin_api.call(req, res, self)
-		})
+		app.use('/admin_api', admin_api)
 
 		// handle for all website api calls
 		app.use(function (req, res, next) {
