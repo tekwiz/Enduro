@@ -21,15 +21,15 @@ let start_time = new Date().getTime()
 const logtags_config = {
 	nice_dev_init: true,
 	enduro_events: true,
-	enduro_render_events: false,
-	admin_api_calls: false,
-	admin_login: false,
+	enduro_render_events: true,
+	admin_api_calls: true,
+	admin_login: true,
 	file_uploading: true,
 	render_debug: true,
 	juicebox: true,
-	heroku_debug: false,
-	page_manipulation: false,
-	server_usage: false,
+	heroku_debug: true,
+	page_manipulation: true,
+	server_usage: true,
 }
 
 // * ———————————————————————————————————————————————————————— * //
