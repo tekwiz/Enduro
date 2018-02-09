@@ -36,7 +36,7 @@ module.exports = function get_temp_page (req, res, next) {
 		flat_helpers.ensure_directory_existence(temp_destination_path).then(() => {
 			fs.writeFile(temp_destination_path, temp_page_in_raw_html, (err) => {
 				if (err) return next(err)
-				res.send(tmp_destination_url)
+				res.send(temp_destination_url)
 			})
 		})
 	}, (err) => {

@@ -6,7 +6,7 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const pagelist_generator = require('../libs/build_tools/pagelist_generator')
+const pagelist_generator = require('../build_tools/pagelist_generator')
 
 // routed call
 module.exports = function get_cms_list (req, res) {
