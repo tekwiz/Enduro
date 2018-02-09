@@ -5,7 +5,6 @@
 const remote_handler = function () {}
 
 // * vendor dependencies
-const Promise = require('bluebird')
 const request = require('request')
 
 // * enduro dependencies
@@ -13,11 +12,14 @@ const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
 const fs = require('fs')
 
 remote_handler.prototype.upload_to_filesystem_by_file = function (file, timestamp) {
+	// disallow non-latin & ASCII control characters
+	if (/[^x21-x7e]/.test(file.name)) {
+		return Promise.reject(new Error(`Filename includes non-latin or control characters`))
+	}
 
 	// apply timestamp to file's name if it is requested by timestamp parameter
 	let filename = timestamp ? timestamp_filename(file.name) : file.name
-	// normalize filename (ascii only, no whitespace)
-	filename = filename.replace(/[^\x00-\x7F]|\ /ig, '')
+
 	return enduro.filesystem.upload('direct_uploads/' + filename, file.path)
 }
 
