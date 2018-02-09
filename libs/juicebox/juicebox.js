@@ -213,8 +213,8 @@ function write_juicefile (juice) {
 		const destination_juicefile_path = path.join(enduro.project_path, 'juicebox', 'juice.json')
 		flat_helpers.ensure_directory_existence(destination_juicefile_path)
 			.then(() => {
-				fs.writeFile(destination_juicefile_path, JSON.stringify(juice), function (err) {
-					if (err) { reject(err) }
+				fs.writeFile(destination_juicefile_path, JSON.stringify(juice), (err) => {
+					if (err) return reject(err)
 					resolve(juice)
 				})
 			})
@@ -229,33 +229,35 @@ function read_juicefile () {
 
 function get_latest_juice () {
 	return remote_handler.request_file(remote_handler.get_remote_url('juicebox/juice.json', true))
-		.catch(() => {
-			throw new Error('latest juice does not exist')
-		})
-		.spread((body, response) => {
+		.then((args) => {
+			var body = args[0]
+			var response = args[1]
 
 			if (body.indexOf('<?xml') + 1 && body.indexOf('<Error>') + 1) {
 
 				// juicefile doesn't exist yet - let's create a new juicefile
 				if (body.indexOf('AccessDenied') + 1) {
 					log_clusters.log('bucket_access_denied')
+					return null
 				// bucket was not created
 				} else if (body.indexOf('NoSuchBucket') + 1) {
 					log_clusters.log('nonexistent_bucket')
 				} else {
 					logger.raw_err(body)
 				}
-				process.exit()
+
+				throw new Error('Could not read juice file')
 			}
 
-			if (response.statusCode != 200) { reject('couldnt read juice file') }
+			if (response.statusCode != 200) throw new Error('Could not read juice file')
 
 			// check if we got xml or json - xml means there is something wrong
 			const juicefile_in_json = JSON.parse(body)
 
 			return write_juicefile(juicefile_in_json)
 		})
-		.catch(() => {
+		.then((juice) => {
+			if (juice) return juice
 			return write_juicefile(get_new_juicefile())
 		})
 }
