@@ -236,7 +236,19 @@ flat.prototype.has_page_associated = function (flat_object_path) {
 		return false
 	}
 
-	return true
+	let hbs_filepath = path.join(enduro.project_path, 'pages', flat_object_path + '.hbs')
+
+	if (this.is_generator(flat_object_path)) {
+		// eslint-disable-next-line no-useless-escape
+		hbs_filepath = hbs_filepath.replace(/\/[^\/]+(\.hbs)$/, '$1')
+	}
+
+	try {
+		let stats = fs.statSync(hbs_filepath)
+		return stats.isFile()
+	} catch (e) {
+		return false
+	}
 }
 
 // * ———————————————————————————————————————————————————————— * //

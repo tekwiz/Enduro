@@ -9,6 +9,7 @@
 // * enduro dependencies
 const flat = require('../flat_db/flat')
 const format_service = require('../services/format_service')
+const rerouting = require('../page_rendering/rerouting')
 
 // routed call
 module.exports = function get_cms (req, res, next) {
@@ -24,7 +25,7 @@ module.exports = function get_cms (req, res, next) {
 
 		var only_page_name = page_name.split('/').splice(-1)[0]
 
-		res.json({
+		return {
 			success: true,
 			page_name: page_name,
 			only_page_name: only_page_name,
@@ -41,7 +42,18 @@ module.exports = function get_cms (req, res, next) {
 			path_list: page_name.split('/'),
 			// bool saying whether content file can be deleted
 			deletable: flat.is_deletable(page_name)
+		}
+	}).then((data) => {
+		return rerouting.get_rerouter().then((rerouter) => {
+			return rerouter(data.page_link + '/index')
+		}).then((destination_path) => {
+			if (destination_path) {
+				data.page_link = destination_path.replace(/\/index$/, '')
+			}
+			return data
 		})
+	}).then((data) => {
+		res.json(data)
 	}, (err) => {
 		if (!err) err = new Error('undefined error in rejection')
 		next(err)
