@@ -5,7 +5,7 @@
 // *	@return {response} - Success boolean and user info
 // * ———————————————————————————————————————————————————————— * //
 // * enduro dependencies
-const logger = require(enduro.enduro_path + '/libs/logger')
+const logger = require('../logger')
 
 // routed call
 module.exports = function check_session (req, res) {

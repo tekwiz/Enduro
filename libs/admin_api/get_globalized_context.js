@@ -10,8 +10,8 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
-const globalizer_helpers = require(enduro.enduro_path + '/libs/globalizer/globalizer_helpers')
+const flat = require('../flat_db/flat')
+const globalizer_helpers = require('../globalizer/globalizer_helpers')
 
 // routed call
 module.exports = function get_globalized_context (req, res, next) {

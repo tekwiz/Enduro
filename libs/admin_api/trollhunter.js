@@ -6,7 +6,7 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const trollhunter = require(enduro.enduro_path + '/libs/trollhunter')
+const trollhunter = require('../trollhunter')
 
 // routed call
 module.exports = function trollhunter_api (req, res, next) {

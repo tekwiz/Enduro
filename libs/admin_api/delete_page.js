@@ -6,8 +6,8 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const page_adding_service = require(enduro.enduro_path + '/libs/admin_utilities/page_adding_service')
-const logger = require(enduro.enduro_path + '/libs/logger')
+const page_adding_service = require('../admin_utilities/page_adding_service')
+const logger = require('../logger')
 
 // routed call
 module.exports = function delete_page (req, res) {

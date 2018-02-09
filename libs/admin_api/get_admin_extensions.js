@@ -10,7 +10,7 @@ const glob = require('glob-promise')
 const path = require('path')
 
 // * enduro dependencies
-const brick_handler = require(enduro.enduro_path + '/libs/bricks/brick_handler')
+const brick_handler = require('../bricks/brick_handler')
 
 // routed call
 module.exports = function get_admin_extensions (req, res, next) {

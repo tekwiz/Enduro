@@ -6,8 +6,8 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const admin_security = require(enduro.enduro_path + '/libs/admin_utilities/admin_security')
-const logger = require(enduro.enduro_path + '/libs/logger')
+const admin_security = require('../admin_utilities/admin_security')
+const logger = require('../logger')
 
 // routed call
 module.exports = function login_by_password (req, res) {

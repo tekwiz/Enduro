@@ -7,8 +7,8 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
-const format_service = require(enduro.enduro_path + '/libs/services/format_service')
+const flat = require('../flat_db/flat')
+const format_service = require('../services/format_service')
 
 // routed call
 module.exports = function get_cms (req, res, next) {

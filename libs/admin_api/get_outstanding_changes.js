@@ -5,7 +5,7 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const juicebox = require(enduro.enduro_path + '/libs/juicebox/juicebox')
+const juicebox = require('../juicebox/juicebox')
 
 // routed call
 module.exports = function get_outstanding_changes (req, res, next) {

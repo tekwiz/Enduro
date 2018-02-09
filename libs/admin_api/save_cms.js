@@ -8,9 +8,9 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
-const logger = require(enduro.enduro_path + '/libs/logger')
-const admin_rights = require(enduro.enduro_path + '/libs/admin_utilities/admin_rights')
+const flat = require('../flat_db/flat')
+const logger = require('../logger')
+const admin_rights = require('../admin_utilities/admin_rights')
 
 // routed call
 module.exports = function save_cms (req, res, next) {

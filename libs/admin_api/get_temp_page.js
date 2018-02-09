@@ -12,9 +12,9 @@ const path = require('path')
 const fs = require('fs')
 
 // * enduro dependencies
-const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
-const logger = require(enduro.enduro_path + '/libs/logger')
-const temper = require(enduro.enduro_path + '/libs/temper/temper')
+const flat_helpers = require('../flat_db/flat_helpers')
+const logger = require('../logger')
+const temper = require('../temper/temper')
 
 // routed call
 module.exports = function get_temp_page (req, res, next) {

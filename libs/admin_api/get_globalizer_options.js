@@ -27,7 +27,7 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * enduro dependencies
-const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
+const flat = require('../flat_db/flat')
 
 // routed call
 module.exports = function get_globalizer_options (req, res, next) {
