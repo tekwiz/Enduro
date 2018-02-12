@@ -61,4 +61,25 @@ page_service.prototype.delete_page = function (pagename) {
 		.then(cmslist => pagelist_generator.save_cms_list(cmslist))
 }
 
+function rename_page (pagename, new_pagename) {
+	return new Promise((resolve, reject) => {
+		const file_path = path.join(enduro.project_path, 'cms', pagename + '.js')
+		const new_file_path = path.join(enduro.project_path, 'cms', new_pagename + '.js')
+
+		fs.rename(file_path, new_file_path, (err) => {
+			if (err) return reject(err)
+
+			console.log(`File ${file_path} renamed to ${new_file_path}`)
+			resolve()
+		})
+	})
+}
+
+// rename a page
+page_service.prototype.rename_page = function (pagename, new_pagename) {
+	return rename_page(pagename, new_pagename)
+		.then(() => pagelist_generator.generate_cms_list())
+		.then(cmslist => pagelist_generator.save_cms_list(cmslist))
+}
+
 module.exports = new page_service()
