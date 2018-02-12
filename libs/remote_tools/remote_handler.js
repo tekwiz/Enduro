@@ -13,7 +13,7 @@ const fs = require('fs')
 
 remote_handler.prototype.upload_to_filesystem_by_file = function (file, timestamp) {
 	// disallow non-latin & ASCII control characters
-	if (/[^x21-x7e]/.test(file.name)) {
+	if (/[^\x21-\x7e]/.test(file.name)) {
 		return Promise.reject(new Error(`Filename includes non-latin or control characters`))
 	}
 
