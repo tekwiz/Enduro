@@ -24,6 +24,17 @@ const default_configuration = {
 		build_folder: '_generated',
 		port: 5000,
 		cultures: [],
+		trust_proxy: 1,
+		powered_by_header: 'enduro.js',
+		session_config: {
+			secret: 'keyboard cat',
+			resave: false,
+			saveUninitialized: true,
+			cookie: {
+				maxAge: 30 * 60 * 1000 // 30 minutes
+			}
+		},
+		cors_config: {}
 	},
 	default_secret_configuration: {}
 }

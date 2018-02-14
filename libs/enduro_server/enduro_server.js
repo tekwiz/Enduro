@@ -22,29 +22,6 @@ const logger = require(enduro.enduro_path + '/libs/logger')
 const ab_tester = require(enduro.enduro_path + '/libs/ab_testing/ab_tester')
 const brick_handler = require(enduro.enduro_path + '/libs/bricks/brick_handler')
 
-var app = express()
-
-// initialization of the sessions
-app.set('trust proxy', 1)
-app.use(session({
-	secret: 'keyboard cat',
-	resave: false,
-	saveUninitialized: true,
-	cookie: {
-		maxAge: 30 * 60 * 1000 // 30 minutes
-	},
-}))
-
-app.use(cookieParser())
-
-app.use(cors())
-
-// add enduro.js header
-app.use(function (req, res, next) {
-	res.header('X-Powered-By', 'enduro.js')
-	next()
-})
-
 // * ———————————————————————————————————————————————————————— * //
 // * 	server run
 // *
@@ -59,6 +36,33 @@ enduro_server.prototype.run = function (server_setup) {
 	server_setup = server_setup || {}
 
 	return new Promise(function (resolve, reject) {
+		var app = express()
+
+		// Cookie parser (https://github.com/expressjs/cookie-parser)
+		app.use(cookieParser())
+
+		// Trust proxy (http://expressjs.com/en/guide/behind-proxies.html)
+		if (enduro.config.trust_proxy) {
+			app.set('trust proxy', enduro.config.trust_proxy)
+		}
+
+		// Session (https://github.com/expressjs/session)
+		if (enduro.config.session_config) {
+			app.use(session(enduro.config.session_config))
+		}
+
+		// CORS (https://github.com/expressjs/cors)
+		if (enduro.config.cors_config) {
+			app.use(cors(enduro.config.cors_config))
+		}
+
+		// add enduro.js header
+		if (enduro.config.powered_by_header) {
+			app.use(function (req, res, next) {
+				res.header('X-Powered-By', enduro.config.powered_by_header)
+				next()
+			})
+		}
 
 		// overrides the port by system environment variable
 		enduro.config.port = process.env.PORT || enduro.flags.port || enduro.config.port || 5000
