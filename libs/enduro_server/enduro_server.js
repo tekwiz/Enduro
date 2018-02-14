@@ -80,8 +80,13 @@ enduro_server.prototype.run = function (server_setup) {
 			}
 		})
 
-		// forward the app and server to running enduro application
-		website_app.forward(app, enduro.server)
+		try {
+			// forward the app and server to running enduro application
+			website_app.forward(app, enduro.server)
+			website_app.enduro_server(enduro, app)
+		} catch (e) {
+			return reject(e)
+		}
 
 		app.use('/admin/logout', (req, res) => {
 			req.session.destroy((err) => {

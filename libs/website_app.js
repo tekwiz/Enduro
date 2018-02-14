@@ -10,6 +10,7 @@ const flat_helpers = require(enduro.enduro_path + '/libs/flat_db/flat_helpers')
 
 // constants
 const LOCAL_APP_FILE = enduro.project_path + '/app/app.js'
+const LOCAL_SERVER_FILE = enduro.project_path + '/enduro_server.js'
 
 // * ———————————————————————————————————————————————————————— * //
 // * 	forward app
@@ -29,6 +30,15 @@ website_api.prototype.forward = function (app, server) {
 			console.log(e)
 		}
 
+	}
+}
+
+website_api.prototype.enduro_server = function (enduro, app) {
+	// checks if enduro_server.js is present in local enduro app
+	if (flat_helpers.file_exists_sync(LOCAL_SERVER_FILE)) {
+		// forward the app & server to enduro server extension
+		let local_server = require(LOCAL_SERVER_FILE)
+		local_server(enduro, app)
 	}
 }
 
