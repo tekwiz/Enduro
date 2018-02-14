@@ -5,7 +5,6 @@
 const action = function () {}
 
 // * vendor dependencies
-const Promise = require('bluebird')
 const extend = require('extend')
 
 // * enduro dependencies
@@ -20,37 +19,35 @@ action.prototype.action = function (config) {
 	config = config || {}
 
 	extend(true, enduro.flags, config)
-	return new Promise(function (resolve, reject) {
-		// clears the global data
-		global_data.clear()
 
-		log_clusters.log('developer_start')
+	// clears the global data
+	global_data.clear()
 
-		logger.timestamp('developer start', 'enduro_events')
+	log_clusters.log('developer_start')
 
-		let prevent_double_callback = false
+	logger.timestamp('developer start', 'enduro_events')
 
-		enduro.actions.render()
-			.then(() => {
+	let prevent_double_callback = false
 
-				logger.timestamp('Render finished', 'enduro_events')
+	return enduro.actions.render()
+		.then(() => {
+			logger.timestamp('Render finished', 'enduro_events')
 
-				gulp_tasks.start(enduro.flags.norefresh ? 'default_norefresh' : 'default', () => {
-					if (!enduro.flags.noadmin && !prevent_double_callback) {
-						prevent_double_callback = true
-						logger.timestamp('production server starting', 'enduro_events')
+			return gulp_tasks.start_promised(enduro.flags.norefresh ? 'default_norefresh' : 'default')
+		})
+		.then(() => {
+			if (!enduro.flags.noadmin && !prevent_double_callback) {
+				prevent_double_callback = true
+				logger.timestamp('production server starting', 'enduro_events')
 
-						if (!enduro.flags.noproduction) {
-							// start production server in development mode
-							enduro_server.run({ development_mode: true })
-						}
+				if (!enduro.flags.noproduction) {
+					// start production server in development mode
+					return enduro_server.run({ development_mode: true })
+				}
 
-						resolve()
-					}
-					// After everything is done
-				})
-			})
-	})
+				return
+			}
+		})
 }
 
 module.exports = new action()
