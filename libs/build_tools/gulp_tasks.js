@@ -242,7 +242,8 @@ gulp.task('default_norefresh', [assets_copier_watch, 'browser_sync_norefresh'])
 
 gulp.start_promised = function (task_name) {
 	return new Promise(function (resolve, reject) {
-		gulp.start(task_name, () => {
+		gulp.start(task_name, (err) => {
+			if (err) return reject(err)
 			resolve()
 		})
 	})
