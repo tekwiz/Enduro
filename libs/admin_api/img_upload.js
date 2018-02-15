@@ -16,13 +16,14 @@ const admin_rights = require('../admin_utilities/admin_rights')
 module.exports = [
 	// middleware to process upload
 	multer({
-		dest: 'tmp/uploads',
-		fileFilter: (req, file, callback) => {
-			if (/^image\//.test(file.mimetype)) {
-				return callback(null, true)
-			}
-			return callback(null, false)
-		}
+		dest: 'tmp/uploads'
+		//TODO enduro config to limit upload file types to images
+		// fileFilter: (req, file, callback) => {
+		// 	if (/^image\//.test(file.mimetype)) {
+		// 		return callback(null, true)
+		// 	}
+		// 	return callback(null, false)
+		// }
 		//TODO enduro config to set the upload file size limit, e.g.:
 		// limits: {
 		// 	fileSize: enduro.config.image_file_size_limit
