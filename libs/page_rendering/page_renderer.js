@@ -25,7 +25,7 @@ const markdownifier = require(enduro.enduro_path + '/libs/markdown/markdownifier
 // *	@param {string} context_path - context - path to context file, relative to /cms filder
 // *	@param {string} culture - context - culture name. destination path gets prefixed by culture
 // *	@param {string} dest_path - path to where the rendered .html file should be saved, relative to /build folder.
-// *	@return {promise} -  empty payload
+// *	@return {promise} -  cultured destination path
 // * ———————————————————————————————————————————————————————— * //
 page_renderer.prototype.render_file = function (template_path, context_path, culture, dest_path) {
 	const self = this
@@ -52,7 +52,7 @@ page_renderer.prototype.render_file = function (template_path, context_path, cul
 							if (err) { return logger.err_block(err) }
 
 							logger.twolog('page ' + destination_path, 'created', 'enduro_render_events')
-							resolve()
+							resolve(destination_path)
 						})
 					})
 			})
