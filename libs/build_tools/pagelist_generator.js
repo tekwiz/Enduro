@@ -22,6 +22,10 @@ const format_service = require(enduro.enduro_path + '/libs/services/format_servi
 const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
 const rerouting = require(enduro.enduro_path + '/libs/page_rendering/rerouting')
 
+pagelist_generator.prototype.get_rerouter = function () {
+	return rerouting.get_rerouter()
+}
+
 // * ———————————————————————————————————————————————————————— * //
 // * 	init
 // *
@@ -63,8 +67,8 @@ pagelist_generator.prototype.init = function (gulp) {
 // *	@return {promise} - promise with cmslist
 // * ———————————————————————————————————————————————————————— * //
 pagelist_generator.prototype.generate_cms_list = function () {
-	return new Promise(function (resolve, reject) {
-		rerouting.get_rerouter().then((rerouter) => {
+	return new Promise((resolve, reject) => {
+		this.get_rerouter().then((rerouter) => {
 			glob(enduro.project_path + '/cms/**/*.js', function (err, files) {
 				if (err) { console.log('failed to generate cms list', err) }
 
