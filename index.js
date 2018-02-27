@@ -4,12 +4,32 @@
 // * ———————————————————————————————————————————————————————— * //
 
 // * vendor dependencies
-const Promise = require('bluebird')
+const path = require('path')
+const fs = require('fs')
 
 // * enduro dependencies
 const linker = require('./libs/linker/linker')
 
 const enduro_instance = function () {}
+
+enduro_instance.prototype.get_enduro_local = function () {
+	if (!this.enduro_local) {
+		const fn = path.join(enduro.project_path, 'enduro.js')
+
+		if (fs.existsSync(fn)) {
+			try {
+				this.enduro_local = require(fn)
+			} catch (e) {
+				console.error(`Error loading ${fn}: ${e.stack}`)
+				throw e
+			}
+		} else {
+			this.enduro_local = {}
+		}
+	}
+
+	return this.enduro_local
+}
 
 // * ———————————————————————————————————————————————————————— * //
 // * 	quick_init
@@ -23,6 +43,10 @@ enduro_instance.prototype.quick_init = function () {
 
 	// exposes enduro api, state, variables and configuration as public variable
 	global.enduro = linker.init_enduro_linked_configuration(process.cwd(), __dirname)
+
+	if (this.get_enduro_local().quick_init) {
+		this.get_enduro_local().quick_init()
+	}
 
 	return this // returns self chain-style in case the full init is needed later
 }
@@ -52,7 +76,12 @@ enduro_instance.prototype.init = function (settings) {
 	return Promise.all([
 		linker.expose_enduro_actions(), // actions are stored in /libs/actions/
 		linker.read_config()
-	])
+	]).then((results) => {
+		if (this.get_enduro_local().init) {
+			this.get_enduro_local().init()
+		}
+		return results
+	})
 }
 
 module.exports = new enduro_instance()
