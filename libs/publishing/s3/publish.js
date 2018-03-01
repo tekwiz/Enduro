@@ -9,7 +9,7 @@ function put_action (s3, build_path, key, digest) {
 		s3.upload({
 			Key: key,
 			Body: fs.createReadStream(path.join(build_path, key)),
-			ContentType: mime.contentType(key),
+			ContentType: mime.contentType(path.extname(key)),
 			Metadata: {
 				digest: digest
 			}
