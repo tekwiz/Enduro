@@ -37,9 +37,9 @@ function delete_actions (s3, keys) {
 	})
 }
 
-function post_publish (options) {
+function post_publish (actions, options) {
 	if (enduro.post_publish) {
-		return enduro.post_publish(options)
+		return enduro.post_publish(actions, options)
 	}
 	return Promise.resolve()
 }
@@ -63,6 +63,10 @@ module.exports = function publish (actions, options) {
 		switch (action[1]) {
 			case '': break
 			case 'put':
+				if (options.dryrun) {
+					action_promises.push({ put: path.join(build_path, action[0]) })
+					break
+				}
 				action_promises.push(
 					get_digest(path.join(build_path, action[0]))
 						.then(digest => put_action(s3, build_path, action[0], digest))
@@ -76,7 +80,9 @@ module.exports = function publish (actions, options) {
 		}
 	}
 
-	if (keys_to_delete.length) {
+	if (options.dryrun && keys_to_delete.length) {
+		action_promises.push({ delete: keys_to_delete })
+	} else if (keys_to_delete.length) {
 		action_promises.push(delete_actions(s3, keys_to_delete))
 	}
 
@@ -85,9 +91,9 @@ module.exports = function publish (actions, options) {
 	}
 
 	if (options.dryrun) { // skip running the actions
-		return post_publish(options)
+		return post_publish(actions, options)
 	}
 
 	return Promise.all(action_promises)
-		.then(() => post_publish(options))
+		.then(() => post_publish(actions, options))
 }

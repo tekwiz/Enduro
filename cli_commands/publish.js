@@ -19,13 +19,9 @@ module.exports = {
 
 		enduro_instance.init()
 			.then(() => {
-				return publishing.s3.status()
+				return publishing.s3.status(options)
 					.then((publish_actions) => {
 						console.log(chalk.bold('Publishing...'))
-
-						publish_actions.delete('robots.txt')
-						publish_actions.delete('error.html')
-						publish_actions.delete('favicon.ico')
 
 						for (let action of publish_actions) {
 							switch (action[1]) {
@@ -41,10 +37,6 @@ module.exports = {
 								default:
 									return Promise.reject(new Error(`Unknown action: ${action}`))
 							}
-						}
-
-						if (options.dryrun) {
-							return new Map()
 						}
 
 						return publish_actions
