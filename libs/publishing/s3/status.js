@@ -97,7 +97,14 @@ function list_remote_with_heads (s3) {
 		})
 }
 
-module.exports = function status () {
+function pre_publish (actions, options) {
+	if (enduro.pre_publish) {
+		return enduro.pre_publish(actions, options)
+	}
+	return Promise.resolve(actions)
+}
+
+module.exports = function status (options) {
 	const build_path = path.join(enduro.project_path, enduro.config.build_folder)
 
 	var s3 = new AWS.S3({
@@ -135,4 +142,5 @@ module.exports = function status () {
 
 			return result
 		})
+		.then((actions) => pre_publish(actions, options))
 }
