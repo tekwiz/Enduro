@@ -66,6 +66,7 @@ enduro_render.prototype.render = function () {
 		})
 		.then((cultured_destination_paths) => {
 			list_files_recursive(build_path)
+				.filter(fn => path.basename(fn) === 'index.html')
 				.map(fn => path.relative(build_path, fn).replace(/\.html$/, ''))
 				.filter(fn => ![ '_prebuilt', 'assets', 't' ].includes(fn.split(path.sep)[0]))
 				.forEach((fn) => {

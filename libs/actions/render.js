@@ -66,6 +66,11 @@ action.prototype.action = function (dont_do_juice_pull) {
 			return enduro_render.render()
 		})
 		.then(() => {
+			if (enduro.post_render) {
+				return enduro.post_render()
+			}
+		})
+		.then(() => {
 			return new Promise(function (resolve, reject) {
 				return gulp_tasks.start('production', () => {
 					resolve()
