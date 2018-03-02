@@ -24,6 +24,9 @@ const default_configuration = {
 		build_folder: '_generated',
 		port: 5000,
 		cultures: [],
+		s3: {
+			region: 'us-west-1'
+		},
 		trust_proxy: 1,
 		powered_by_header: 'enduro.js',
 		session_config: {
