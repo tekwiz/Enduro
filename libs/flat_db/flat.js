@@ -26,37 +26,97 @@ const brick_processors = require(enduro.enduro_path + '/libs/bricks/brick_proces
 // *	@return {Promise} - Promise with no content. Resolve if saved successfully, reject otherwise
 // * ———————————————————————————————————————————————————————— * //
 flat.prototype.save = function (filename, contents) {
-	const self = this
+	// TODO: maybe the file could be backed up somewhere before overwriting
+	contents = contents || {}
 
-	return new Promise(function (resolve, reject) {
-		// TODO: maybe the file could be backed up somewhere before overwriting
-		contents = contents || {}
+	// url decode filename
+	filename = decode(filename)
+
+	const fullpath_to_cms_file = this.get_full_path_to_flat_object(filename)
+
+	return flat_helpers.ensure_directory_existence(fullpath_to_cms_file)
+		.then(() => {
+			return this.load_raw(fullpath_to_cms_file, true)
+		})
+		.then((contents_before) => {
+			if (enduro.config.meta_context_enabled) {
+				if (!contents_before.meta) contents_before.meta = {}
+				if (!contents.meta) contents.meta = {}
+
+				if (contents_before.meta.last_edited !== contents.meta.last_edited) {
+					throw new Error(`last_edit mismatch`)
+				}
+
+				// add meta data (only if meta is enabled - currently juicebox)
+				flat_helpers.add_meta_context(contents)
+			}
+
+			// formats js file so it can be edited by hand later
+			const flatObj = require_from_string('module.exports = ' + JSON.stringify(contents))
+			return stringify_object(flatObj, { indent: '	', singleQuotes: true })
+		})
+		.then((contents_pretty_string) => {
+			return new Promise((resolve, reject) => {
+				// save cms file
+				fs.writeFile(fullpath_to_cms_file, contents_pretty_string, (err) => {
+					err ? reject(err) : resolve()
+				})
+			})
+		})
+}
+// * ———————————————————————————————————————————————————————— * //
+// * 	Load cms file without brick processors
+// *	@param {string} filename - Path to file without extension, relative to /cms folder
+// *	@param {bool} is_full_absolute_path - if true, filename is handled as absolute path
+// *	@return {Promise} - Promise returning an object
+// * ———————————————————————————————————————————————————————— * //
+flat.prototype.load_raw = function (filename, is_full_absolute_path) {
+	return new Promise((resolve, reject) => {
 
 		// url decode filename
 		filename = decode(filename)
 
-		const fullpath_to_cms_file = self.get_full_path_to_flat_object(filename)
+		let fullpath_to_cms_file
+		if (is_full_absolute_path) {
+			fullpath_to_cms_file = filename
+		} else {
+			fullpath_to_cms_file = this.get_full_path_to_flat_object(filename)
 
-		const flatObj = require_from_string('module.exports = ' + JSON.stringify(contents))
-
-		// add meta data (only if meta is enabled - currently juicebox)
-		if (enduro.config.meta_context_enabled) {
-			flat_helpers.add_meta_context(flatObj)
 		}
 
-		// formats js file so it can be edited by hand later
-		const prettyString = stringify_object(flatObj, {indent: '	', singleQuotes: true})
+		// check if file exists. return empty object if not
+		if (!flat_helpers.file_exists_sync(fullpath_to_cms_file)) {
+			return resolve({})
+		}
 
-		// save cms file
-		flat_helpers.ensure_directory_existence(fullpath_to_cms_file)
-			.then(() => {
-				fs.writeFile(fullpath_to_cms_file, prettyString, function (err) {
-					if (err) {
-						reject()
-					}
-					resolve()
-				})
-			})
+		fs.readFile(fullpath_to_cms_file, (err, raw_context_data) => {
+			if (err) return reject(err)
+
+			// check if file is empty. return empty object if so
+			if (raw_context_data == '') return resolve({})
+
+			// strip whitespace
+			raw_context_data = raw_context_data.toString().trim()
+
+			// wraps content in curly braces if it isn't already wrapped
+			// the file will still be saved with braces but might help some people if
+			// they forget to include the braces
+			if (raw_context_data[0] != '{') {
+				raw_context_data = '{' + raw_context_data + '}'
+			}
+
+			// convert the string-based javascript into an object
+			let context = {}
+			try {
+				context = require_from_string('module.exports = ' + raw_context_data)
+			} catch (e) {
+				console.error(e.stack)
+				log_clusters.log('malformed_context_file', filename)
+				return reject(e)
+			}
+
+			resolve(context)
+		})
 	})
 }
 
@@ -67,62 +127,10 @@ flat.prototype.save = function (filename, contents) {
 // *	@return {Promise} - Promise returning an object
 // * ———————————————————————————————————————————————————————— * //
 flat.prototype.load = function (filename, is_full_absolute_path) {
-	const self = this
-
-	return new Promise(function (resolve, reject) {
-
-		// url decode filename
-		filename = decode(filename)
-
-		let fullpath_to_cms_file
-		if (is_full_absolute_path) {
-			fullpath_to_cms_file = filename
-		} else {
-			fullpath_to_cms_file = self.get_full_path_to_flat_object(filename)
-
-		}
-
-		// check if file exists. return empty object if not
-		if (!flat_helpers.file_exists_sync(fullpath_to_cms_file)) {
-			resolve({})
-		} else {
-			fs.readFile(fullpath_to_cms_file, function (err, raw_context_data) {
-				if (err) { reject() }
-
-				// check if file is empty. return empty object if so
-				if (raw_context_data == '') {
-					return resolve({})
-				}
-
-				// strip whitespace
-				raw_context_data = raw_context_data.toString().trim()
-
-				// wraps content in curly braces if it isn't already wrapped
-				// the file will still be saved with braces but might help some people if
-				// they forget to include the braces
-				if (raw_context_data[0] != '{') {
-					raw_context_data = '{' + raw_context_data + '}'
-				}
-
-				// convert the string-based javascript into an object
-				let context = {}
-				try {
-					context = require_from_string('module.exports = ' + raw_context_data)
-				} catch (e) {
-					console.log(e)
-					log_clusters.log('malformed_context_file', filename)
-				}
-
-				// brick_processors enable bricks(plugins) to manipulate the context just before
-				// page rendering happens
-				return brick_processors.process('cms_context_processor', context)
-					.then((proccessed_context) => {
-						resolve(proccessed_context)
-					})
-
-			})
-		}
-	})
+	return this.load_raw(filename, is_full_absolute_path)
+		.then((context) => {
+			return brick_processors.process('cms_context_processor', context)
+		})
 }
 
 // * ———————————————————————————————————————————————————————— * //
@@ -149,8 +157,7 @@ flat.prototype.get_cms_filename_from_fullpath = (full_path) => {
 // *	@return {boolean} - returns true if specified file exists
 // * ———————————————————————————————————————————————————————— * //
 flat.prototype.flat_object_exists = function (flat_object_path) {
-	const self = this
-	return flat_helpers.file_exists_sync(self.get_full_path_to_flat_object(flat_object_path))
+	return flat_helpers.file_exists_sync(this.get_full_path_to_flat_object(flat_object_path))
 }
 
 // * ———————————————————————————————————————————————————————— * //
@@ -161,16 +168,14 @@ flat.prototype.flat_object_exists = function (flat_object_path) {
 // *	@return {object} - returns merged object
 // * ———————————————————————————————————————————————————————— * //
 flat.prototype.upsert = function (flat_object_path, context_to_update) {
-	const self = this
-
-	return self.load(flat_object_path)
+	return this.load(flat_object_path)
 		.then((current_context) => {
-			const merged_context = _.mergeWith(current_context, context_to_update, function (objValue, srcValue) {
+			const merged_context = _.mergeWith(current_context, context_to_update, (objValue, srcValue) => {
 				if (Array.isArray(objValue) && Array.isArray(srcValue)) {
 					return _.union(objValue, srcValue)
 				}
 			})
-			return self.save(flat_object_path, merged_context)
+			return this.save(flat_object_path, merged_context)
 		})
 }
 
