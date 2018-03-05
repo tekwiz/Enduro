@@ -44,7 +44,7 @@ function post_publish (actions, options) {
 	return Promise.resolve()
 }
 
-module.exports = function publish (actions, options) {
+module.exports = function publish (actions, options = {}) {
 	const build_path = path.join(enduro.project_path, enduro.config.build_folder)
 
 	var s3 = new AWS.S3({

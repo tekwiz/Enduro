@@ -104,7 +104,7 @@ function pre_publish (actions, options) {
 	return Promise.resolve(actions)
 }
 
-module.exports = function status (options) {
+module.exports = function status (options = {}) {
 	const build_path = path.join(enduro.project_path, enduro.config.build_folder)
 
 	var s3 = new AWS.S3({
