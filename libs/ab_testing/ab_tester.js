@@ -83,33 +83,28 @@ ab_tester.prototype.get_ab_tested_filepath = function (url, req, res) {
 	// removes slash from the front
 	page_name = url[0] == '/' ? url.substring(1) : url
 
-	return new Promise(function (resolve, reject) {
-		self.generate_global_ab_list_if_nonexistent()
-			.then(() => {
+	return self.generate_global_ab_list_if_nonexistent().then(() => {
+		// return if page does not have an ab_tests
+		if (!(page_name in global.ab_test_scenarios)) {
+			return url
+		}
 
-				// return if page does not have an ab_tests
-				if (!(page_name in global.ab_test_scenarios)) {
-					return resolve(url)
-				}
+		const ab_scenario = global.ab_test_scenarios[page_name]
 
-				const ab_scenario = global.ab_test_scenarios[page_name]
+		let picked_variation
 
-				let picked_variation
+		// check if user has cookie for this url
+		if (req.cookies['enduro_ab_' + url]) {
+			picked_variation = req.cookies['enduro_ab_' + url]
+		} else {
+			picked_variation = ab_scenario[Math.floor(Math.random() * ab_scenario.length)]
+			res.cookie('enduro_ab_' + url, picked_variation, { maxAge: 900000, httpOnly: true })
+		}
 
-				// check if user has cookie for this url
-				if (req.cookies['enduro_ab_' + url]) {
-					picked_variation = req.cookies['enduro_ab_' + url]
-				} else {
-					picked_variation = ab_scenario[Math.floor(Math.random() * ab_scenario.length)]
-					res.cookie('enduro_ab_' + url, picked_variation, { maxAge: 900000, httpOnly: true })
-				}
-
-				if (picked_variation.page == 'index') {
-					resolve('/index')
-				} else {
-					resolve('/' + picked_variation.page + '/index')
-				}
-			})
+		if (picked_variation.page == 'index') {
+			return '/index'
+		}
+		return `/${picked_variation.page}/index`
 	})
 }
 

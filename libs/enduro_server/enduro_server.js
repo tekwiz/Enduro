@@ -9,18 +9,21 @@
 const enduro_server = function () {}
 
 // * vendor dependencies
+const path = require('path')
 const express = require('express')
 const session = require('express-session')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 
 // * enduro dependencies
-const admin_api = require(enduro.enduro_path + '/libs/admin_api')
-const website_app = require(enduro.enduro_path + '/libs/website_app')
-const trollhunter = require(enduro.enduro_path + '/libs/trollhunter')
-const logger = require(enduro.enduro_path + '/libs/logger')
-const ab_tester = require(enduro.enduro_path + '/libs/ab_testing/ab_tester')
-const brick_handler = require(enduro.enduro_path + '/libs/bricks/brick_handler')
+const admin_api = require('../admin_api')
+const website_app = require('../website_app')
+const logger = require('../logger')
+const brick_router = require('../bricks/router')
+const ab_testing_middleware = require('../ab_testing/middleware')
+const robots_txt = require('./robots-txt')
+const middleware = require('./middleware')
+const admin_router = require('./admin-router')
 
 // * ———————————————————————————————————————————————————————— * //
 // * 	server run
@@ -29,13 +32,8 @@ const brick_handler = require(enduro.enduro_path + '/libs/bricks/brick_handler')
 // *	@param {boolean} development_mode - if true, prevents enduro render on start to prevent double rendering
 // *	@return {}
 // * ———————————————————————————————————————————————————————— * //
-enduro_server.prototype.run = function (server_setup) {
-	// stores current enduro_server instance
-	const self = this
-
-	server_setup = server_setup || {}
-
-	return new Promise(function (resolve, reject) {
+enduro_server.prototype.run = function (server_setup = {}) {
+	return new Promise((resolve, reject) => {
 		var app = express()
 
 		// Cookie parser (https://github.com/expressjs/cookie-parser)
@@ -58,10 +56,7 @@ enduro_server.prototype.run = function (server_setup) {
 
 		// add enduro.js header
 		if (enduro.config.powered_by_header) {
-			app.use(function (req, res, next) {
-				res.header('X-Powered-By', enduro.config.powered_by_header)
-				next()
-			})
+			app.use(middleware.powered_by)
 		}
 
 		// overrides the port by system environment variable
@@ -88,81 +83,51 @@ enduro_server.prototype.run = function (server_setup) {
 			return reject(e)
 		}
 
-		app.use('/admin/logout', (req, res) => {
-			req.session.destroy((err) => {
-				if (err) {
-					console.error(err.stack ? err.stack : `Error message: ${err}`)
-					return res.status(500).send('An error occurred')
-				}
-				return res.redirect('/admin')
-			})
+		app.get('/admin_api_refresh', (req, res, next) => {
+			req.url = '/admin/api_refresh'
+			next()
 		})
+
+		app.use('/admin', admin_router())
 
 		// serve static files from /_generated folder
-		app.use('/admin', express.static(enduro.config.admin_folder))
-		app.use('/assets', express.static(enduro.project_path + '/' + enduro.config.build_folder + '/assets'))
-		app.use('/_prebuilt', express.static(enduro.project_path + '/' + enduro.config.build_folder + '/_prebuilt'))
-		app.use('/remote', express.static(enduro.project_path + '/remote'))
-
-		// handle for executing enduro refresh from client
-		app.get('/admin_api_refresh', function (req, res) {
-			enduro.actions.render()
-				.then(() => {
-					res.send({ success: true, message: 'enduro refreshed successfully' })
-				})
-		})
+		let build_path = path.join(enduro.project_path, enduro.config.build_folder)
+		app.use('/assets', express.static(path.join(build_path, 'assets'), {
+			fallthrough: false
+		}))
+		app.use('/_prebuilt', express.static(path.join(build_path, '_prebuilt'), {
+			fallthrough: false
+		}))
+		app.use('/remote', express.static(path.join(enduro.project_path + '/remote'), {
+			fallthrough: false
+		}))
 
 		// robots.txt
-		app.get('/robots.txt', function (req, res) {
-			res.type('text/plain')
-			res.send("User-agent: *\nAllow: /")
-		})
+		app.get('/robots.txt', robots_txt)
 
 		// serve bricks' static assets
-		brick_handler.serve_brick_static_assets(app, express)
+		app.use('/brick', brick_router())
 
 		// handle for all admin api calls
 		app.use('/admin_api', admin_api)
 
-		// handle for all website api calls
-		app.use(function (req, res, next) {
-			logger.timestamp('requested: ' + req.url, 'server_usage')
+		// Trollhunter protection
+		app.use(middleware.trollhunter)
 
-			// exclude admin calls and access to static assets
-			if (!/admin\/(.*)/.test(req.url) && !/assets\/(.*)/.test(req.url)) {
+		// AB Testing handler
+		app.use(ab_testing_middleware)
 
-				trollhunter.login(req)
-					.then(() => {
+		// handle all website calls
+		app.use(middleware.logger)
+		app.use(express.static(build_path, {
+			fallthrough: false
+		}))
 
-						let requested_url = req.path
-
-						let a = requested_url.split('/').filter(x => x.length)
-						// serves index.html when empty or culture-only url is provided
-						if (requested_url.length <= 1 ||
-							(requested_url.split('/')[1] && enduro.config.cultures.indexOf(requested_url.split('/')[1]) + 1 && requested_url.split('/').length <= 2) ||
-							a[a.length - 1].indexOf('.') === -1
-						) {
-							requested_url += requested_url.slice(-1) === '/' ? 'index' : '/index'
-						}
-
-						// applies ab testing
-						return ab_tester.get_ab_tested_filepath(requested_url, req, res)
-
-					}, () => {
-						throw new Error('user not logged in')
-					})
-					.then((requested_url) => {
-						// serves the requested file
-						res.sendFile(enduro.project_path + '/' + enduro.config.build_folder + requested_url + '.html')
-					}, () => {
-						res.sendFile(enduro.config.admin_folder + '/enduro_login/index.html')
-					})
-			}
-		})
-
-		// init socket and store everybody in global enduro.sockets
-		const io = require('socket.io')(enduro.server)
-		enduro.sockets = io.sockets
+		if (!enduro.config.disable_socket_io) {
+			// init socket and store everybody in global enduro.sockets
+			let io = require('socket.io')(enduro.server)
+			enduro.sockets = io.sockets
+		}
 	})
 }
 

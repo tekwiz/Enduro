@@ -50,20 +50,6 @@ brick_handler.prototype.load_bricks = function () {
 }
 
 // * ———————————————————————————————————————————————————————— * //
-// * 	server brick static assets
-// * 	every brick comes with static files which enduro will server under
-// * 	/bricks/:brick_name/...
-// * ———————————————————————————————————————————————————————— * //
-brick_handler.prototype.serve_brick_static_assets = function (app, express) {
-	const self = this
-
-	for (brick_name in enduro.config.bricks) {
-		const bricks_asset_folder = path.join(self._get_bricks_root_folder(brick_name), 'assets')
-		app.use('/brick/' + brick_name, express.static(bricks_asset_folder))
-	}
-}
-
-// * ———————————————————————————————————————————————————————— * //
 // * 	require brick by brick name
 // * ———————————————————————————————————————————————————————— * //
 brick_handler.prototype._require_brick = function (brick_name) {
