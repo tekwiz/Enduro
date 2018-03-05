@@ -130,7 +130,7 @@ module.exports = function status (options = {}) {
 				if (result.has(key)) continue
 
 				if (local.has(key) && !remote.has(key)) {
-					result.set(key, 'put')
+					result.set(key, 'new')
 				} else if (!local.has(key) && remote.has(key)) {
 					result.set(key, 'delete')
 				} else if (local.get(key).digest !== remote.get(key).Metadata.digest) {

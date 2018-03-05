@@ -28,6 +28,7 @@ module.exports = {
 								case '':
 									console.log(chalk.green(`  ${action[0]}`))
 									break
+								case 'new':
 								case 'put':
 									console.log(chalk.yellow(`+ ${action[0]}`))
 									break

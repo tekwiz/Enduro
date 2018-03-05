@@ -62,6 +62,7 @@ module.exports = function publish (actions, options = {}) {
 	for (let action of actions) {
 		switch (action[1]) {
 			case '': break
+			case 'new':
 			case 'put':
 				if (options.dryrun) {
 					action_promises.push({ put: path.join(build_path, action[0]) })
