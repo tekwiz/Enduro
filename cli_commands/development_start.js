@@ -32,6 +32,14 @@ module.exports = {
 		enduro_instance.init({ flags: cli_arguments })
 			.then(() => {
 				enduro.actions.developer_start()
+			}, (err) => {
+				if (err && err.stack) {
+					console.error(err.stack)
+				} else if (err) {
+					console.error(`An error occurred: ${err}`)
+				} else {
+					console.error(`An unknown error occurred`)
+				}
 			})
 	}
 }
