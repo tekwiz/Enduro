@@ -4,12 +4,28 @@
 const admin_security = function () {}
 
 // * vendor dependencies
-const Promise = require('bluebird')
 const crypto = require('crypto')
 
 // * enduro dependencies
-const logger = require(enduro.enduro_path + '/libs/logger')
-const flat = require(enduro.enduro_path + '/libs/flat_db/flat')
+const flat = require('../flat_db/flat')
+
+function get_sanitized_user (user) {
+	return {
+		username: user.username,
+		tags: user.tags,
+		user_created_timestamp: user.user_created_timestamp,
+		user_updated_timestamp: user.user_updated_timestamp
+	}
+}
+
+admin_security.prototype.get_user_details_by_username = function (username) {
+	return flat.load(enduro.config.admin_secure_file).then((users) => {
+		users = (users.users ? users.users : [])
+		let result = users.find(u => u.username === username)
+		if (!result) return null
+		return get_sanitized_user(result)
+	})
+}
 
 // * ———————————————————————————————————————————————————————— * //
 // * 	get user by username
@@ -65,6 +81,13 @@ admin_security.prototype.get_all_users = function () {
 		})
 }
 
+admin_security.prototype.get_all_users_details = function () {
+	return flat.load(enduro.config.admin_secure_file).then((users) => {
+		users = (users.users ? users.users : [])
+		return users.map(get_sanitized_user)
+	})
+}
+
 // * ———————————————————————————————————————————————————————— * //
 // * 	login by password
 // *	@param {string} username
@@ -111,50 +134,68 @@ admin_security.prototype.login_by_password = function (username, password) {
 // *	@return {promise} - resolves/rejects based on if the creation was successful
 // * ———————————————————————————————————————————————————————— * //
 admin_security.prototype.add_admin = function (username, password, tags) {
-	const self = this
+	// sets username to 'root' if no username is provided
+	if (!username || typeof username == 'object') {
+		username = 'root'
+	}
 
-	return new Promise(function (resolve, reject) {
+	// generate random password if no password is provided
+	password = password || Math.random().toString(10).substring(10)
 
-		// sets username to 'root' if no username is provided
-		if (!username || typeof username == 'object') {
-			username = 'root'
-		}
+	// put empty tag if no tags are provided
+	tags = tags
+		? tags.split(',')
+		: []
 
-		// generate random password if no password is provided
-		password = password || Math.random().toString(10).substring(10)
+	const logincontext = {
+		username: username,
+		password: password,
+		tags: tags
+	}
 
-		// put empty tag if no tags are provided
-		tags = tags
-			? tags.split(',')
-			: []
+	return this.get_user_by_username(logincontext.username)
+		.then(() => {
+			throw new Error(`User already exists: ${username}`)
+		}, () => {
+			salt_and_hash(logincontext)
+			timestamp(logincontext)
+			return flat.upsert(enduro.config.admin_secure_file, { users: [ logincontext ] })
+		})
+		.then(() => {
+			console.info(`Created user ${username}`)
+			return get_sanitized_user(logincontext)
+		})
+}
 
-		const logincontext = {
-			username: username,
-			password: password,
-			tags: tags
-		}
+admin_security.prototype.update_admin = function (username, password, tags) {
+	var user = {
+		username: username,
+		tags: tags,
+		user_updated_timestamp: Date.now()
+	}
 
-		self.get_user_by_username(logincontext.username)
-			.then(() => {
-				logger.err_block('User \'' + username + '\' already exists')
-				reject()
-			}, () => {
-				salt_and_hash(logincontext)
-				timestamp(logincontext)
+	if (typeof user.tags == 'string') {
+		user.tags = (user.tags ? user.tags.trim().split(/\s*,\s*/) : [])
+	}
 
-				return flat.upsert(enduro.config.admin_secure_file, {users: [logincontext]})
-			})
-			.then(() => {
-				// Let the user know the project was created successfully
-				logger.init('ENDURO - Creating admin user')
-				logger.log('Username:', false)
-				logger.tablog(username, true)
-				logger.log('Password:', false)
-				logger.tablog(password, true)
-				logger.end()
-				resolve()
-			})
-	})
+	if (!user.tags) user.tags = []
+
+	if (password) {
+		Object.assign(user, salt_and_hash({ username: username, password: password }))
+	}
+
+	return flat.load(enduro.config.admin_secure_file)
+		.then((users_context) => {
+			var user_index = users_context.users.findIndex(u => u.username === username)
+			if (user_index === -1) throw new Error(`User not found: ${username}`)
+
+			let updated_user = Object.assign(users_context.users[user_index], user)
+			return flat.save(enduro.config.admin_secure_file, users_context).then(() => updated_user)
+		})
+		.then((updated_user) => {
+			console.info(`Updated user ${updated_user.username}`)
+			return get_sanitized_user(updated_user)
+		})
 }
 
 admin_security.prototype.remove_all_users = function () {
@@ -192,6 +233,7 @@ function salt_and_hash (logincontext) {
 	// deletes plain password
 	delete logincontext.password
 
+	return logincontext
 }
 
 // * ———————————————————————————————————————————————————————— * //
@@ -201,6 +243,7 @@ function salt_and_hash (logincontext) {
 // * ———————————————————————————————————————————————————————— * //
 function timestamp (logincontext) {
 	logincontext.user_created_timestamp = Date.now()
+	logincontext.user_updated_timestamp = Date.now()
 
 	return logincontext
 }

@@ -65,4 +65,6 @@ fs.readdirSync(admin_api_dir).forEach((fn) => {
 	api_router.all(`/${api_name}`, api_endpoint)
 })
 
+api_router.use('/users', require('./admin_api/users'))
+
 module.exports = api_router
