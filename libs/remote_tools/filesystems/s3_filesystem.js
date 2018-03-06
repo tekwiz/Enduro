@@ -4,6 +4,8 @@
 // * ———————————————————————————————————————————————————————— * //
 const filesystem = function () {}
 
+const fs = require('fs')
+const path = require('path')
 const url = require('url')
 const AWS = require('aws-sdk')
 const mime = require('mime-types')
@@ -46,7 +48,7 @@ filesystem.prototype.upload = function (filename, path_to_file) {
 
 filesystem.prototype.get_remote_url = function (filename, juicebox) {
 	var remoteUrl = {
-		scheme: 'https',
+		protocol: 'https:',
 		hostname: `s3-${enduro.config.s3.region}.amazonaws.com`,
 		pathname: `/${enduro.config.s3.bucket}/${filename}`
 	}
