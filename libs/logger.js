@@ -118,11 +118,11 @@ logger.prototype.err = function (message, logtag, error = null) {
 	if (!pass_tagcheck(logtag)) { return }
 	if (!message) { return }
 	if (error && error.stack) {
-		message += ': ' + error.stack
-	} else if (error) {
-		message += ': ' + error
+		error = error.stack
+	} else if (typeof error != 'string') {
+		error = JSON.stringify(error)
 	}
-	log(chalk.red(rpad(message, FRAME_WIDTH)))
+	log(chalk.red(rpad(message += ': ' + error, FRAME_WIDTH)))
 }
 
 // * │ Something                                       Happened │ * //
