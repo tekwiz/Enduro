@@ -45,9 +45,9 @@ enduro_server.prototype.run = function (server_setup = {}) {
 		}
 
 		// Session (https://github.com/expressjs/session)
-		if (enduro.config.session_config) {
-			app.use(session(enduro.config.session_config))
-		}
+		// if (enduro.config.session_config) {
+		// 	app.use(session(enduro.config.session_config))
+		// }
 
 		// CORS (https://github.com/expressjs/cors)
 		if (enduro.config.cors_config) {
