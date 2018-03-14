@@ -19,7 +19,7 @@ router.param('username', (req, res, next, username) => {
  * List users
  * GET /admin_api/users
  */
-router.get((req, res, next) => {
+router.get('/', (req, res, next) => {
 	if (!req.user.tags.includes('admin')) {
 		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
 	}
@@ -33,7 +33,7 @@ router.get((req, res, next) => {
  * Create user
  * POST /admin_api/users
  */
-router.post((req, res, next) => {
+router.post('/', (req, res, next) => {
 	if (!req.user.tags.includes('admin')) {
 		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
 	}
