@@ -32,15 +32,13 @@ module.exports = function save_cms (req, res, next) {
 	enduro.flags.temporary_nocmswatch = true
 
 	return flat.save(filename, content)
-		.then(() => enduro.actions.render(true), (err) => {
+		.then((new_context) => {
+			return enduro.actions.render(true).then(() => res.send(new_context))
+		}, (err) => {
 			if (err && err.message === 'last_edit mismatch') {
 				return res.status(422).json({ success: false, message: err.message })
 			}
-			if (err) throw err
-			throw new Error('undefined error in rejection')
-		})
-		.then(() => res.send(), (err) => {
 			if (!err) err = new Error('undefined error in rejection')
-			next(err)
+			return next(err)
 		})
 }

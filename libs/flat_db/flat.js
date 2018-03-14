@@ -63,6 +63,9 @@ flat.prototype.save = function (filename, contents) {
 				})
 			})
 		})
+		.then(() => {
+			return this.load(fullpath_to_cms_file, true)
+		})
 }
 // * ———————————————————————————————————————————————————————— * //
 // * 	Load cms file without brick processors
