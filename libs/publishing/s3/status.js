@@ -5,6 +5,7 @@ const get_digest = require('../get-digest')
 
 function list_files_recursive (dir) {
 	return fs.readdirSync(dir)
+		.filter(fn => !fn.startsWith('.'))
 		.map(fn => path.join(dir, fn))
 		.reduce((files, fn) => {
 			var stat = fs.statSync(fn)
