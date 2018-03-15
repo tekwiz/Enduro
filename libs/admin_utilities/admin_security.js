@@ -198,6 +198,22 @@ admin_security.prototype.update_admin = function (username, password, tags) {
 		})
 }
 
+admin_security.prototype.remove_admin = function (username) {
+	return flat.load(enduro.config.admin_secure_file)
+		.then((users_context) => {
+			var user_index = users_context.users.findIndex(u => u.username === username)
+			if (user_index === -1) throw new Error(`User not found: ${username}`)
+
+			let removed_user = users_context.users[user_index]
+			users_context.users.splice(user_index, 1)
+			return flat.save(enduro.config.admin_secure_file, users_context).then(() => removed_user)
+		})
+		.then((removed_user) => {
+			console.info(`Removed user ${removed_user.username}`)
+			return get_sanitized_user(removed_user)
+		})
+}
+
 admin_security.prototype.remove_all_users = function () {
 	return flat.save('.users', {})
 }

@@ -38,7 +38,7 @@ router.post('/', (req, res, next) => {
 		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
 	}
 
-	admin_security.add_admin(req.user_details.username, req.body.password, req.body.tags)
+	admin_security.add_admin(req.body.username, req.body.password, req.body.tags)
 		.then((user) => {
 			res.json({ success: true, user: user })
 		}, err => next(err))
@@ -70,6 +70,21 @@ router.put(`/:username`, (req, res, next) => {
 	}
 
 	admin_security.update_admin(req.user_details.username, req.body.password, req.body.tags)
+		.then((user) => {
+			res.json({ success: true, user: user })
+		}, err => next(err))
+})
+
+/**
+ * Update user
+ * GET /admin_api/users/:username
+ */
+router.delete(`/:username`, (req, res, next) => {
+	if (!req.user.tags.includes('admin')) {
+		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
+	}
+
+	admin_security.remove_admin(req.user_details.username)
 		.then((user) => {
 			res.json({ success: true, user: user })
 		}, err => next(err))
