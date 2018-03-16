@@ -69,6 +69,10 @@ router.put(`/:username`, (req, res, next) => {
 		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
 	}
 
+	if (!req.user.tags.includes('admin') && req.body.tags) {
+		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
+	}
+
 	let tags = req.body.tags
 	if (tags === undefined || tags === null) {
 		tags = req.user_details.tags
