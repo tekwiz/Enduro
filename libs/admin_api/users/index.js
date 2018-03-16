@@ -69,7 +69,12 @@ router.put(`/:username`, (req, res, next) => {
 		return res.status(403).json({ success: false, message: 'Insufficient permissions'})
 	}
 
-	admin_security.update_admin(req.user_details.username, req.body.password, req.body.tags)
+	let tags = req.body.tags
+	if (tags === undefined || tags === null) {
+		tags = req.user_details.tags
+	}
+
+	admin_security.update_admin(req.user_details.username, req.body.password, tags)
 		.then((user) => {
 			res.json({ success: true, user: user })
 		}, err => next(err))
