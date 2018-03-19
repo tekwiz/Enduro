@@ -40,7 +40,12 @@ flat.prototype.save = function (filename, contents) {
 		})
 		.then((contents_before) => {
 			if (enduro.config.meta_context_enabled) {
-				if (!contents_before.meta) contents_before.meta = {}
+				if (!contents_before.meta) {
+					contents_before.meta = {}
+					if (contents.meta && contents.meta.last_edited) {
+						contents_before.meta.last_edited = contents.meta.last_edited
+					}
+				}
 				if (!contents.meta) contents.meta = {}
 
 				if (contents_before.meta.last_edited !== contents.meta.last_edited) {
