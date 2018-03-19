@@ -33,10 +33,10 @@ module.exports = [
 	function img_upload (req, res, next) {
 		logger.timestamp('Trying to upload a file', 'file_uploading')
 
-		if (!admin_rights.can_user_do_that(req.user, 'write')) {
-			console.warn(`Permission denied for ${req.user.username}`)
-			return res.status(403).json({ success: false, message: 'Permission denied' })
-		}
+		// if (!admin_rights.can_user_do_that(req.user, 'write')) {
+		// 	console.warn(`Permission denied for ${req.user.username}`)
+		// 	return res.status(403).json({ success: false, message: 'Permission denied' })
+		// }
 
 		logger.timestamp('uploading file: ' + req.file.originalname, 'file_uploading')
 

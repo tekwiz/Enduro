@@ -23,10 +23,10 @@ module.exports = function save_cms (req, res, next) {
 		return res.send({ success: false, message: 'Parameters not provided' })
 	}
 
-	if (!admin_rights.can_user_do_that(req.user, 'write')) {
-		console.warn(`Permission denied for ${req.user.username}`)
-		return res.status(403).json({ success: false, message: 'Permission denied' })
-	}
+	// if (!admin_rights.can_user_do_that(req.user, 'write')) {
+	// 	console.warn(`Permission denied for ${req.user.username}`)
+	// 	return res.status(403).json({ success: false, message: 'Permission denied' })
+	// }
 
 	// disable watching for cms files to prevent double rendering
 	enduro.flags.temporary_nocmswatch = true
