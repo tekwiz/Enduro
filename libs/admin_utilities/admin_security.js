@@ -140,12 +140,16 @@ admin_security.prototype.add_admin = function (username, password, tags) {
 	}
 
 	// generate random password if no password is provided
-	password = password || Math.random().toString(10).substring(10)
+	if (!password) {
+		password = Math.random().toString(10).substring(10)
+	}
 
 	// put empty tag if no tags are provided
-	tags = tags
-		? tags.split(',')
-		: []
+	if (typeof tags == 'string') {
+		tags = tags.split(',')
+	} else if (!tags) {
+		tags = []
+	}
 
 	const logincontext = {
 		username: username,
