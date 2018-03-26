@@ -7,19 +7,16 @@
 
 // * enduro dependencies
 const page_service = require('../admin_utilities/page_service')
-const logger = require('../logger')
 
 // routed call
 module.exports = function delete_page (req, res) {
 	const pagename = req.query.pagename
 
-	logger.timestamp(`${req.user.username} is trying to delete page ${pagename}`, 'page_manipulation')
-
 	page_service.delete_page(pagename).then((pagelist) => {
-		logger.timestamp('deleting page successful', 'page_manipulation')
+		req.logger.info('Deleted page')
 		res.json({ success: true })
 	}, (err) => {
-		logger.timestamp('deleting page failed', 'page_manipulation', err)
+		req.logger.error(err, 'Failed to delete page')
 		res.json({ success: false, message: 'deleting page failed' })
 	})
 }

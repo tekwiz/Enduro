@@ -13,7 +13,7 @@ module.exports = function trollhunter_api (req, res, next) {
 	trollhunter.login(req).then(() => {
 		res.send({ success: true })
 	}, (err) => {
-		if (err) console.error(err.stack ? err.stack : `Error message: ${err}`)
+		req.logger.error(err || 'Unknown error')
 		res.send({ success: false })
 	})
 }

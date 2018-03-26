@@ -9,7 +9,6 @@ const multer = require('multer')
 
 // * enduro dependencies
 const file_uploader = require('../admin_utilities/file_uploader')
-const logger = require('../logger')
 const admin_rights = require('../admin_utilities/admin_rights')
 
 // Array of middleware + endpoint
@@ -31,14 +30,14 @@ module.exports = [
 	}).single('file'),
 
 	function img_upload (req, res, next) {
-		logger.timestamp('Trying to upload a file', 'file_uploading')
+		req.logger.debug('Trying to upload a file')
 
-		// if (!admin_rights.can_user_do_that(req.user, 'write')) {
-		// 	console.warn(`Permission denied for ${req.user.username}`)
+		//TODO if (!admin_rights.can_user_do_that(req.user, 'write')) {
+		// 	req.logger.warn('Permission denied')
 		// 	return res.status(403).json({ success: false, message: 'Permission denied' })
 		// }
 
-		logger.timestamp('uploading file: ' + req.file.originalname, 'file_uploading')
+		req.logger.info({ file: req.file.originalname }, 'Uploading')
 
 		file_uploader.upload({
 			name: req.file.originalname,

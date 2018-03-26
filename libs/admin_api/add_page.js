@@ -7,7 +7,6 @@
 
 // * enduro dependencies
 const page_service = require('../admin_utilities/page_service')
-const logger = require('../logger')
 
 // routed call
 module.exports = function add_page (req, res) {
@@ -15,14 +14,12 @@ module.exports = function add_page (req, res) {
 	const new_pagename = req.query.new_pagename
 	const generator = req.query.generator
 
-	logger.timestamp(`${req.user.username} is trying to create a new page`, 'page_manipulation')
-
 	// checks if user is logged in
 	page_service.new_generator_page(new_pagename, generator).then((pagelist) => {
-		logger.timestamp('adding page successful', 'page_manipulation')
+		req.logger.info('Added page')
 		res.json({ success: true })
 	}, (err) => {
-		logger.err('adding page failed', 'page_manipulation', err)
+		req.logger.error(err, 'Failed to add page')
 		res.json({ success: false, message: 'adding page failed' })
 	})
 }

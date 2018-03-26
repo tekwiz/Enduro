@@ -13,7 +13,6 @@ const fs = require('fs')
 
 // * enduro dependencies
 const flat_helpers = require('../flat_db/flat_helpers')
-const logger = require('../logger')
 const temper = require('../temper/temper')
 
 // routed call
@@ -23,7 +22,7 @@ module.exports = function get_temp_page (req, res, next) {
 
 	// checks if all required parameters had been received
 	if (!filename || !content) {
-		logger.err('parameters not provided')
+		req.logger.debug('parameters not provided')
 		return res.send({ success: false, message: 'Parameters not provided' })
 	}
 

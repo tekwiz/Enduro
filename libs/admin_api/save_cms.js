@@ -9,7 +9,6 @@
 
 // * enduro dependencies
 const flat = require('../flat_db/flat')
-const logger = require('../logger')
 const admin_rights = require('../admin_utilities/admin_rights')
 
 // routed call
@@ -19,12 +18,12 @@ module.exports = function save_cms (req, res, next) {
 
 	// checks if all required parameters had been received
 	if (!filename || !content) {
-		logger.err('parameters not provided')
+		req.logger.debug('parameters not provided')
 		return res.send({ success: false, message: 'Parameters not provided' })
 	}
 
-	// if (!admin_rights.can_user_do_that(req.user, 'write')) {
-	// 	console.warn(`Permission denied for ${req.user.username}`)
+	//TODO if (!admin_rights.can_user_do_that(req.user, 'write')) {
+	// 	req.logger.warn('Permission denied')
 	// 	return res.status(403).json({ success: false, message: 'Permission denied' })
 	// }
 

@@ -23,6 +23,8 @@ const api_links = {
 enduro_linker.prototype.init_enduro_linked_configuration = function (project_path, enduro_path, flags) {
 	let linker = {}
 
+	linker.logger_new = require('../logger_new')
+
 	// paths for project
 	linker.project_path = project_path
 

@@ -7,24 +7,23 @@
 
 // * enduro dependencies
 const admin_security = require('../admin_utilities/admin_security')
-const logger = require('../logger')
 
 // routed call
 module.exports = function login_by_password (req, res) {
 	const username = req.query.username
 	const password = req.query.password
 
-	logger.timestamp(`${username} is trying to log in`, 'admin_login')
+	req.logger.debug({ username: username }, 'Login')
 
 	if (!password || !username) {
 		return res.json({ success: false, message: 'missing parameter(s)' })
 	}
 
 	admin_security.login_by_password(username, password).then((user) => {
-		logger.timestamp(`${username} successfully logged in`, 'admin_login')
+		req.logger.info({ username: username }, 'Login successful')
 		req.user = user
 		req.session.username = username
-		logger.timestamp(`session created for ${username}`, 'admin_login')
+		req.logger.trace({ username: username }, 'Session created')
 		res.json({
 			success: true,
 			username: req.user.username,
@@ -33,7 +32,7 @@ module.exports = function login_by_password (req, res) {
 			sid: req.session.id
 		})
 	}, (err) => {
-		logger.err(`${username} failed to log in`, 'admin_login', err)
+		req.logger.error(err, { username: username }, 'Login failed')
 		res.json({ success: false })
 	})
 }

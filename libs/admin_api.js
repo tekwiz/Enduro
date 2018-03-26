@@ -8,20 +8,19 @@ const path = require('path')
 const bodyParser = require('body-parser')
 
 // * enduro dependencies
-const logger = require(enduro.enduro_path + '/libs/logger')
-const admin_security = require(enduro.enduro_path + '/libs/admin_utilities/admin_security')
+const logger = require('./logger_new')
+const admin_security = require('./admin_utilities/admin_security')
 
 var api_router = require('express').Router()
 
 api_router.use((err, req, res, next) => {
-	if (err.stack) console.error(err.stack)
-	if (err) console.error(`Error message: ${err}`)
+	req.logger.error(err)
 	res.status(500).json({ success: false, message: 'api endpoint error' })
 })
 
 api_router.use((req, res, next) => {
 	var api_name = req.url.match(/\/([^?\/]+)/)[1] // eslint-disable-line no-useless-escape
-	logger.timestamp(`making api call: ${api_name}`, 'admin_api_calls')
+	req.logger = logger.child({ api: api_name, req: req })
 	next()
 })
 
@@ -48,7 +47,7 @@ api_router.use((req, res, next) => {
 
 	admin_security.get_user_by_username(req.session.username).then((user) => {
 		req.user = user
-		logger.timestamp(`user making api call: ${req.user.username}`, 'admin_api_calls')
+		req.logger = req.logger.child({ user: user })
 		next()
 	}, next)
 })

@@ -13,7 +13,7 @@ module.exports = function get_cms_list (req, res) {
 	pagelist_generator.get_cms_list().then((pagelist) => {
 		res.json({ success: true, data: pagelist })
 	}, (err) => {
-		if (err) console.error(err.stack ? err.stack : `Error message: ${err}`)
+		req.logger.error(err || 'Unknown error')
 		res.json({ success: false, message: 'failed to get the cms list' })
 	})
 }

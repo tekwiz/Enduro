@@ -20,13 +20,13 @@ module.exports = function publish (req, res, next) {
 	}
 
 	let publish_details = req.body.actions.map(a => `${a[1].toUpperCase()} ${a[0]}`).join(`\n    `)
-	console.warn(`Publishing (${req.user.username})\n    ${publish_details}`)
+	req.logger.debug({ actions: publish_details }, 'Publishing')
 
 	publishing.s3.publish(actions).then(() => {
-		console.warn(`Publish succeeded`)
+		req.logger.info({ actions: publish_details }, 'Published')
 		res.json({ success: true })
 	}, (err) => {
-		console.error(`Publish failed ${err.stack}`)
+		req.logger.error(err, { actions: publish_details }, 'Publish failed')
 		res.status(500).json({ success: false, error: 'Something went wrong.' })
 	})
 }
